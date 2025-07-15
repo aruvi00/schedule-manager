@@ -1,3 +1,4 @@
+altair==4.2.0
 Babel==2.11.0
 fitz==0.0.1.dev2
 holidays==0.75
