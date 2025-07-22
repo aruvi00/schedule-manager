@@ -13,6 +13,8 @@ import sys
 import holidays
 import hashlib
 import time
+import requests
+import base64
 
 try:
     from streamlit_calendar import calendar as my_calendar
@@ -39,6 +41,46 @@ DATA_FILE = 'vacation_data.json'
 TEMPLATE_FILE = 'horas_registro.pdf'
 OUTPUT_FILE = 'horas_registro_rellenado.pdf'
 
+def update_vacation_data_on_github(data_dict):
+    """Actualiza vacation_data.json en GitHub a través de la API."""
+    token = st.secrets["GITHUB_TOKEN"]
+    repo = st.secrets["GITHUB_REPO"]
+    branch = st.secrets.get("GITHUB_BRANCH", "main")
+    path = st.secrets.get("GITHUB_FILE_PATH", "vacation_data.json")
+    
+    api_url = f"https://api.github.com/repos/{repo}/contents/{path}"
+    
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    # Obtener el SHA del archivo actual
+    response = requests.get(api_url, headers=headers)
+    if response.status_code != 200:
+        st.error("❌ No se pudo obtener el archivo desde GitHub")
+        return
+    
+    content = response.json()
+    sha = content["sha"]
+    
+    # Codificar contenido nuevo en base64
+    encoded_content = base64.b64encode(json.dumps(data_dict, indent=4).encode()).decode()
+    
+    payload = {
+        "message": "🔄 Actualización de vacaciones desde Streamlit",
+        "content": encoded_content,
+        "sha": sha,
+        "branch": branch
+    }
+    
+    result = requests.put(api_url, headers=headers, json=payload)
+    
+    if result.status_code in [200, 201]:
+        st.toast("✅ Datos guardados en GitHub", icon="💾")
+    else:
+        st.error(f"❌ Error al guardar: {result.json()}")
+        
 def hash_password(password):
     """Hash de la contraseña usando SHA-256"""
     return hashlib.sha256(password.encode()).hexdigest()
@@ -187,19 +229,45 @@ def get_madrid_holidays(year, custom_days=[]):
 
 def load_vacation_data():
     """Cargar datos de vacaciones desde el archivo JSON."""
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, 'r') as f:
-            return json.load(f)
+    # if os.path.exists(DATA_FILE):
+    #     with open(DATA_FILE, 'r') as f:
+    #         return json.load(f)
+    # return {
+    #     'total_days': 22,  # Días laborables libres por defecto
+    #     'used_days': [],
+    #     'custom_holidays': []
+    # }
+    token = st.secrets["GITHUB_TOKEN"]
+    repo = st.secrets["GITHUB_REPO"]
+    branch = st.secrets.get("GITHUB_BRANCH", "main")
+    path = st.secrets.get("GITHUB_FILE_PATH", "vacation_data.json")
+    
+    api_url = f"https://api.github.com/repos/{repo}/contents/{path}?ref={branch}"
+    
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    response = requests.get(api_url, headers=headers)
+    if response.status_code == 200:
+        content = response.json()
+        file_content = base64.b64decode(content['content']).decode()
+        return json.loads(file_content)
+    
+    # Si no existe el archivo
+    st.warning("No se pudo cargar vacation_data.json desde GitHub. Usando valores por defecto.")
     return {
-        'total_days': 22,  # Días laborables libres por defecto
+        'total_days': 22,
         'used_days': [],
         'custom_holidays': []
     }
 
 def save_vacation_data(data):
     """Guardar datos de vacaciones en el archivo JSON."""
-    with open(DATA_FILE, 'w') as f:
-        json.dump(data, f, indent=4)
+    update_vacation_data_on_github(data)
+    # with open(DATA_FILE, 'w') as f:
+    #     json.dump(data, f, indent=4)
 
 def calculate_remaining_days(total_days, used_days):
     """Calcular días de vacaciones restantes."""
