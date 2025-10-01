@@ -232,6 +232,24 @@ def register_form():
                 help="Días laborables libres al año"
             )
             
+            st.markdown("---")
+            st.subheader("📥 Importar datos existentes (opcional)")
+            st.info("Si ya tienes datos de vacaciones guardados, puedes importarlos aquí")
+            
+            uploaded_file = st.file_uploader(
+                "Sube tu archivo vacation_data.json",
+                type=['json'],
+                help="Importa tus días de vacaciones y festivos personalizados"
+            )
+            
+            import_data = None
+            if uploaded_file is not None:
+                try:
+                    import_data = json.load(uploaded_file)
+                    st.success(f"✅ Archivo cargado: {len(import_data.get('used_days', []))} días de vacaciones, {len(import_data.get('custom_holidays', []))} festivos personalizados")
+                except:
+                    st.error("❌ Error al leer el archivo JSON")
+            
             st.markdown("<br>", unsafe_allow_html=True)
             
             col_btn1, col_btn2 = st.columns(2)
@@ -290,8 +308,8 @@ def register_form():
                     # Crear archivo de vacaciones inicial
                     vacation_data = {
                         "total_days": total_days,
-                        "used_days": [],
-                        "custom_holidays": [],
+                        "used_days": import_data.get('used_days', []) if import_data else [],
+                        "custom_holidays": import_data.get('custom_holidays', []) if import_data else [],
                         "full_name": full_name,
                         "nif": nif.upper(),
                         "workplace": workplace,
@@ -300,7 +318,12 @@ def register_form():
                     
                     update_vacation_data_on_github(username, vacation_data)
                     
-                    st.success("✅ Cuenta creada exitosamente. Ya puedes iniciar sesión.")
+                    success_msg = "✅ Cuenta creada exitosamente."
+                    if import_data:
+                        success_msg += f" Se importaron {len(vacation_data['used_days'])} días de vacaciones y {len(vacation_data['custom_holidays'])} festivos personalizados."
+                    success_msg += " Ya puedes iniciar sesión."
+                    
+                    st.success(success_msg)
                     time.sleep(2)
                     st.session_state.show_register = False
                     st.rerun()
@@ -561,6 +584,55 @@ def main_app():
     with st.sidebar:
         st.header("⚙️ Configuración")
         
+        # Botón para importar datos
+        with st.expander("📥 Importar datos de vacaciones"):
+            st.write("Importa días de vacaciones y festivos desde un archivo JSON")
+            
+            import_file = st.file_uploader(
+                "Sube vacation_data.json",
+                type=['json'],
+                key="import_existing"
+            )
+            
+            if import_file is not None:
+                try:
+                    imported_data = json.load(import_file)
+                    
+                    st.write("**Datos a importar:**")
+                    st.write(f"- Días de vacaciones: {len(imported_data.get('used_days', []))}")
+                    st.write(f"- Festivos personalizados: {len(imported_data.get('custom_holidays', []))}")
+                    
+                    col_imp1, col_imp2 = st.columns(2)
+                    
+                    with col_imp1:
+                        if st.button("✅ Importar y reemplazar", type="primary"):
+                            vacation_data['used_days'] = imported_data.get('used_days', [])
+                            vacation_data['custom_holidays'] = imported_data.get('custom_holidays', [])
+                            save_vacation_data(username, vacation_data)
+                            st.success("✅ Datos importados correctamente")
+                            st.rerun()
+                    
+                    with col_imp2:
+                        if st.button("➕ Importar y combinar"):
+                            # Combinar sin duplicados
+                            existing_used = set(vacation_data['used_days'])
+                            existing_holidays = set(vacation_data.get('custom_holidays', []))
+                            
+                            new_used = set(imported_data.get('used_days', []))
+                            new_holidays = set(imported_data.get('custom_holidays', []))
+                            
+                            vacation_data['used_days'] = list(existing_used | new_used)
+                            vacation_data['custom_holidays'] = list(existing_holidays | new_holidays)
+                            
+                            save_vacation_data(username, vacation_data)
+                            st.success("✅ Datos combinados correctamente")
+                            st.rerun()
+                            
+                except Exception as e:
+                    st.error(f"❌ Error al leer el archivo: {str(e)}")
+        
+        st.markdown("---")
+        
         total_days = st.number_input(
             'Días laborables libres al año:',
             min_value=0,
@@ -588,6 +660,26 @@ def main_app():
             save_vacation_data(username, vacation_data)
             st.success('Días de vacaciones reseteados')
             st.rerun()
+        
+        # Exportar datos
+        st.markdown("---")
+        with st.expander("📤 Exportar datos"):
+            st.write("Descarga tus datos de vacaciones como respaldo")
+            
+            export_data = {
+                "total_days": vacation_data['total_days'],
+                "used_days": vacation_data['used_days'],
+                "custom_holidays": vacation_data.get('custom_holidays', [])
+            }
+            
+            export_json = json.dumps(export_data, indent=4)
+            
+            st.download_button(
+                label="⬇️ Descargar vacation_data.json",
+                data=export_json,
+                file_name=f"vacation_data_{username}.json",
+                mime="application/json"
+            )
 
     current_year = date.today().year
     
