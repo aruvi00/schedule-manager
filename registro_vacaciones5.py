@@ -338,21 +338,21 @@ def fill_pdf_template(selected_month, used_days, vacation_data):
                         if "MES" in fname:
                             f.field_value = month_name
                             f.update()
-                        elif "AÑO" in fname or "ANIO" in fname:  # depende de cómo esté definido en la plantilla
+                        if "AÑO" in fname or "ANIO" in fname:  # depende de cómo esté definido en la plantilla
                             print('año encontrado')
                             f.field_value = str(selected_month.year)
                             f.update()
-                        elif "CENTRO DE TRABAJO" in fname:
+                        if "CENTRO" in fname:
                             print('centro encontrado')
                             f.field_value = "E.T.S. DE INGENIEROS DE TELECOMUNICACIÓN"
                             f.update()
-                        elif "NIF" in fname:
+                        if "NIF" in fname:
                             f.field_value = "77926862X"
                             f.update()
-                        elif "NOMBRE Y APELLIDOS" in fname:
+                        if "NOMBRE" in fname:
                             f.field_value = "PÉREZ GARCÍA, JUAN"
                             f.update()
-                        elif "EMPRESA" in fname:
+                        if "EMPRESA" in fname:
                             f.field_value = "UPM"
                             f.update()
             
