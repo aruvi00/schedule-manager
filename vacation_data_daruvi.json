@@ -1,6 +1,8 @@
 {
     "total_days": 22,
-    "used_days": [],
+    "used_days": [
+        "2025-01-01"
+    ],
     "custom_holidays": [],
     "full_name": "DAVID RUIZ VITTE",
     "nif": "77992266D",
