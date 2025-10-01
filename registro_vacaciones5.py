@@ -339,9 +339,11 @@ def fill_pdf_template(selected_month, used_days, vacation_data):
                             f.field_value = month_name
                             f.update()
                         elif "AÑO" in fname or "ANIO" in fname:  # depende de cómo esté definido en la plantilla
+                            print('año encontrado')
                             f.field_value = str(selected_month.year)
                             f.update()
                         elif "CENTRO DE TRABAJO" in fname:
+                            print('centro encontrado')
                             f.field_value = "E.T.S. DE INGENIEROS DE TELECOMUNICACIÓN"
                             f.update()
                         elif "NIF" in fname:
