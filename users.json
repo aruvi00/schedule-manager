@@ -14,5 +14,13 @@
         "workplace": "E.T.S. DE INGENIEROS DE TELECOMUNICACI\u00d3N",
         "company": "UPM",
         "created_at": "2025-10-01T10:57:45.653270"
+    },
+    "pgmesa": {
+        "password": "436a73a11a605bc2e5e1338844c087fc0c1bdb13171d4473988f4e05d31f6cbb",
+        "full_name": "Pablo Garc\u00eda Mesa",
+        "nif": "12345678X",
+        "workplace": "International Lab",
+        "company": "DEEPFARM TECHNOLOGIES SL",
+        "created_at": "2025-10-01T15:57:42.109067"
     }
 }
