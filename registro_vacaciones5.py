@@ -327,10 +327,20 @@ def fill_pdf_template(selected_month, used_days, vacation_data):
             target_page = doc[page_index]
             fields = list(target_page.widgets())
             
-            # En la primera página, escribir el mes
-            if page_index == 0 and len(fields) > 4:
-                fields[4].field_value = month_name
-                fields[4].update()
+            # En la primera página, escribir el mes y año
+            # if page_index == 0 and len(fields) > 4:
+            #     fields[4].field_value = month_name
+            #     fields[4].update()
+            if page_index == 0:
+                for f in fields:
+                    if f.field_name:
+                        fname = f.field_name.upper()
+                        if "MES" in fname:
+                            f.field_value = month_name
+                            f.update()
+                        elif "AÑO" in fname or "ANIO" in fname:  # depende de cómo esté definido en la plantilla
+                            f.field_value = str(selected_month.year)
+                            f.update()
             
             # Determinar el índice inicial de la página
             cell_index = 5 if page_index == 0 else 0
