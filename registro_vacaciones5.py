@@ -341,6 +341,18 @@ def fill_pdf_template(selected_month, used_days, vacation_data):
                         elif "AÑO" in fname or "ANIO" in fname:  # depende de cómo esté definido en la plantilla
                             f.field_value = str(selected_month.year)
                             f.update()
+                        elif "CENTRO DE TRABAJO" in fname:
+                            f.field_value = "E.T.S. DE INGENIEROS DE TELECOMUNICACIÓN"
+                            f.update()
+                        elif "NIF" in fname:
+                            f.field_value = "77926862X"
+                            f.update()
+                        elif "NOMBRE Y APELLIDOS" in fname:
+                            f.field_value = "PÉREZ GARCÍA, JUAN"
+                            f.update()
+                        elif "EMPRESA" in fname:
+                            f.field_value = "UPM"
+                            f.update()
             
             # Determinar el índice inicial de la página
             cell_index = 5 if page_index == 0 else 0
