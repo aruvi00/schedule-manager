@@ -30,6 +30,105 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# CSS personalizado para mejorar la estética
+st.markdown("""
+<style>
+    /* Mejorar el aspecto general */
+    .main {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    }
+    
+    /* Tarjetas con efecto glassmorphism */
+    .stMetric {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+    }
+    
+    /* Mejorar headers */
+    h1 {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 700;
+        padding: 10px 0;
+    }
+    
+    h2, h3 {
+        color: #2c3e50;
+        font-weight: 600;
+    }
+    
+    /* Mejorar sidebar */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    [data-testid="stSidebar"] * {
+        color: white !important;
+    }
+    
+    /* Mejorar botones */
+    .stButton > button {
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Mejorar pestañas */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: transparent;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 10px 10px 0 0;
+        padding: 10px 20px;
+        font-weight: 600;
+        border: none;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    /* Mejorar info boxes */
+    .stAlert {
+        border-radius: 10px;
+        border-left: 4px solid;
+    }
+    
+    /* Mejorar expanders */
+    .streamlit-expanderHeader {
+        background-color: rgba(255, 255, 255, 0.5);
+        border-radius: 10px;
+        font-weight: 600;
+    }
+    
+    /* Animación sutil */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .element-container {
+        animation: fadeIn 0.5s ease;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Archivo para gestionar usuarios
 USERS_FILE = 'users.json'
 TEMPLATE_FILE = 'horas_registro.pdf'
@@ -339,23 +438,39 @@ def login_form():
     }
     
     .stApp {
-        background: linear-gradient(135deg, #e0f7f1 0%, #ffffff 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         min-height: 100vh;
     }
     
     .main .block-container {
-        background: black;
         padding-top: 8rem;
         padding-bottom: 2rem;
         max-width: 500px;
     }
     
+    .login-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    
     .login-title {
         text-align: center;
-        color: #000;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         margin-bottom: 1.5rem;
-        font-size: 1.8rem;
-        font-weight: 600;
+        font-size: 2rem;
+        font-weight: 700;
+    }
+    
+    .login-subtitle {
+        text-align: center;
+        color: #666;
+        margin-bottom: 2rem;
+        font-size: 0.95rem;
     }
     
     #MainMenu {visibility: hidden;}
@@ -368,26 +483,28 @@ def login_form():
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
-        st.markdown('<div class="login-title">🔐 Gestor de Horario 🗓️</div>', unsafe_allow_html=True)
+        st.markdown('<div class="login-card">', unsafe_allow_html=True)
+        st.markdown('<div class="login-title">🗓️ Gestor de Vacaciones</div>', unsafe_allow_html=True)
+        st.markdown('<div class="login-subtitle">Inicia sesión para gestionar tus días libres</div>', unsafe_allow_html=True)
         
         with st.form("login_form", clear_on_submit=False):
             username = st.text_input(
                 "Usuario",
-                placeholder="Ingresa tu usuario",
+                placeholder="Tu nombre de usuario",
                 label_visibility="collapsed"
             )
             
             password = st.text_input(
                 "Contraseña",
                 type="password",
-                placeholder="Ingresa tu contraseña",
+                placeholder="Tu contraseña",
                 label_visibility="collapsed"
             )
             
             st.markdown("<br>", unsafe_allow_html=True)
             
             submit_button = st.form_submit_button(
-                "Iniciar Sesión",
+                "🔓 Iniciar Sesión",
                 use_container_width=True,
                 type="primary"
             )
@@ -402,7 +519,7 @@ def login_form():
                         st.session_state['username'] = username
                         st.session_state['user_data'] = users[username]
                         st.session_state['login_time'] = time.time()
-                        st.success("✅ Credenciales correctas")
+                        st.success("✅ ¡Bienvenido!")
                         time.sleep(1)
                         st.rerun()
                     else:
@@ -412,9 +529,11 @@ def login_form():
         
         st.markdown("<br>", unsafe_allow_html=True)
         
-        if st.button("📝 Crear nueva cuenta", use_container_width=True):
+        if st.button("✨ Crear nueva cuenta", use_container_width=True):
             st.session_state.show_register = True
             st.rerun()
+        
+        st.markdown('</div>', unsafe_allow_html=True)
 
 def logout():
     """Cerrar sesión"""
@@ -573,12 +692,20 @@ def main_app():
     username = st.session_state.get('username')
     user_data = st.session_state.get('user_data', {})
     
+    # Header mejorado con iconos y diseño
     col1, col2 = st.columns([3, 1])
     with col1:
-        st.title(f'🗓️ Hola, {user_data.get("full_name", username)}')
+        st.markdown(f"""
+        <div style='padding: 20px; background: rgba(255,255,255,0.8); border-radius: 15px; margin-bottom: 20px;'>
+            <h1 style='margin: 0;'>👋 Hola, {user_data.get("full_name", username).split(',')[0]}</h1>
+            <p style='color: #666; margin: 5px 0 0 0; font-size: 0.9em;'>Gestiona tus vacaciones de forma fácil y visual</p>
+        </div>
+        """, unsafe_allow_html=True)
     with col2:
-        if st.button("🚪 Cerrar Sesión", type="secondary"):
+        st.markdown("<div style='padding-top: 20px;'>", unsafe_allow_html=True)
+        if st.button("🚪 Cerrar Sesión", type="secondary", use_container_width=True):
             logout()
+        st.markdown("</div>", unsafe_allow_html=True)
     
     st.markdown("---")
     
@@ -589,7 +716,12 @@ def main_app():
         return
     
     with st.sidebar:
-        st.header("⚙️ Configuración")
+        st.markdown("""
+        <div style='text-align: center; padding: 20px 0; margin-bottom: 20px;'>
+            <h1 style='font-size: 2.5em; margin: 0;'>📅</h1>
+            <h2 style='margin: 10px 0 0 0; font-size: 1.3em;'>Configuración</h2>
+        </div>
+        """, unsafe_allow_html=True)
         
         # Botón para importar datos
         with st.expander("📥 Importar datos de vacaciones"):
@@ -656,11 +788,16 @@ def main_app():
         st.info("**Por contrato:** 30 días naturales por año trabajado")
         
         remaining_days = calculate_remaining_days(vacation_data['total_days'], vacation_data['used_days'])
+        
+        # Tarjetas de métricas mejoradas
+        st.markdown("<div style='margin: 20px 0;'>", unsafe_allow_html=True)
         col1, col2 = st.columns(2)
         with col1:
-            st.metric("Total", vacation_data['total_days'])
+            st.metric("📊 Total", vacation_data['total_days'], help="Días totales disponibles")
         with col2:
-            st.metric("Restantes", remaining_days)
+            delta_color = "normal" if remaining_days > 5 else "inverse"
+            st.metric("✨ Restantes", remaining_days, help="Días aún disponibles")
+        st.markdown("</div>", unsafe_allow_html=True)
         
         if st.button('🔄 Resetear Vacaciones', type="secondary"):
             vacation_data['used_days'] = []
@@ -690,14 +827,20 @@ def main_app():
 
     current_year = date.today().year
     
+    # Header del calendario mejorado
+    st.markdown("""
+    <div style='background: rgba(255,255,255,0.8); padding: 20px; border-radius: 15px; margin: 20px 0;'>
+        <h2 style='margin: 0; color: #2c3e50;'>📆 Calendario de Vacaciones</h2>
+    </div>
+    """, unsafe_allow_html=True)
+    
     year_col1, year_col2 = st.columns([3, 1])
-    with year_col1:
-        st.header(f'Calendario de Vacaciones {current_year}')
     with year_col2:
         selected_year = st.selectbox(
-            "Año:",
+            "Selecciona año:",
             options=[current_year - 1, current_year, current_year + 1],
-            index=1
+            index=1,
+            label_visibility="collapsed"
         )
     
     eventos = create_calendar_events(vacation_data, selected_year)
@@ -745,9 +888,15 @@ def main_app():
             st.session_state.date_range = (start_date, end_date)
     
     st.markdown("---")
-    st.header("➕ Gestionar Días de Vacaciones")
     
-    tab1, tab2, tab3 = st.tabs(["📅 Selección Individual", "📊 Selección Múltiple", "🎉 Festivos Personalizados"])
+    # Sección de gestión mejorada
+    st.markdown("""
+    <div style='background: rgba(255,255,255,0.8); padding: 20px; border-radius: 15px; margin: 20px 0;'>
+        <h2 style='margin: 0; color: #2c3e50;'>⚙️ Gestionar Días de Vacaciones</h2>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    tab1, tab2, tab3 = st.tabs(["📅 Día Individual", "📊 Rango de Fechas", "🎉 Festivos Personalizados"])
     
     with tab1:
         if "selected_date" in st.session_state:
@@ -871,7 +1020,14 @@ def main_app():
                 st.error("Por favor, introduce un nombre para el festivo")
     
     st.markdown("---")
-    st.header("📄 Generar Informe Mensual")
+    
+    # Sección de informe mejorada
+    st.markdown("""
+    <div style='background: rgba(255,255,255,0.8); padding: 20px; border-radius: 15px; margin: 20px 0;'>
+        <h2 style='margin: 0; color: #2c3e50;'>📄 Generar Informe Mensual</h2>
+        <p style='color: #666; margin: 5px 0 0 0;'>Descarga un PDF con el registro de horas del mes seleccionado</p>
+    </div>
+    """, unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     with col1:
@@ -902,32 +1058,63 @@ def main_app():
                 st.error(f"Error al generar el informe: {str(e)}")
     
     st.markdown("---")
-    st.header("Resumen")
+    
+    # Resumen mejorado con tarjetas
+    st.markdown("""
+    <div style='background: rgba(255,255,255,0.8); padding: 20px; border-radius: 15px; margin: 20px 0;'>
+        <h2 style='margin: 0; color: #2c3e50;'>📋 Resumen de {}</h2>
+    </div>
+    """.format(selected_year), unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.subheader("🏖️ Días de Vacaciones")
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%); 
+                    padding: 15px; border-radius: 10px; margin-bottom: 15px;'>
+            <h3 style='color: white; margin: 0; font-size: 1.1em;'>🏖️ Días de Vacaciones</h3>
+        </div>
+        """, unsafe_allow_html=True)
         vacation_dates = [d for d in vacation_data['used_days'] if datetime.strptime(d, '%Y-%m-%d').year == selected_year]
         vacation_dates.sort()
         
         if vacation_dates:
             for date_str in vacation_dates:
                 date_obj = datetime.strptime(date_str, '%Y-%m-%d')
-                st.write(f"• {date_obj.strftime('%d/%m/%Y')} - {date_obj.strftime('%A')}")
+                st.markdown(f"""
+                <div style='background: rgba(255,255,255,0.7); padding: 8px 12px; 
+                            border-radius: 8px; margin: 5px 0; border-left: 3px solid #4ECDC4;'>
+                    📅 {date_obj.strftime('%d/%m/%Y')} - {date_obj.strftime('%A')}
+                </div>
+                """, unsafe_allow_html=True)
         else:
-            st.write("No hay días de vacaciones registrados")
+            st.info("No hay días de vacaciones registrados")
     
     with col2:
-        st.subheader("🎉 Festivos Oficiales")
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, #FF6B6B 0%, #E74C3C 100%); 
+                    padding: 15px; border-radius: 10px; margin-bottom: 15px;'>
+            <h3 style='color: white; margin: 0; font-size: 1.1em;'>🎉 Festivos Oficiales</h3>
+        </div>
+        """, unsafe_allow_html=True)
         festivos = get_madrid_holidays(selected_year)
         festivos_sorted = sorted(festivos.items())
         
         for fecha, nombre in festivos_sorted:
-            st.write(f"• {fecha.strftime('%d/%m/%Y')} - {nombre}")
+            st.markdown(f"""
+            <div style='background: rgba(255,255,255,0.7); padding: 8px 12px; 
+                        border-radius: 8px; margin: 5px 0; border-left: 3px solid #FF6B6B;'>
+                🎊 {fecha.strftime('%d/%m/%Y')} - {nombre}
+            </div>
+            """, unsafe_allow_html=True)
     
     with col3:
-        st.subheader("🏛️ Festivos Personalizados")
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    padding: 15px; border-radius: 10px; margin-bottom: 15px;'>
+            <h3 style='color: white; margin: 0; font-size: 1.1em;'>🏛️ Festivos Personalizados</h3>
+        </div>
+        """, unsafe_allow_html=True)
         custom_holidays_data = vacation_data.get('custom_holidays', [])
         custom_holidays_display = []
         
@@ -958,9 +1145,14 @@ def main_app():
         
         if custom_holidays_display:
             for holiday in custom_holidays_display:
-                st.write(f"• {holiday['date'].strftime('%d/%m/%Y')} - {holiday['name']}")
+                st.markdown(f"""
+                <div style='background: rgba(255,255,255,0.7); padding: 8px 12px; 
+                            border-radius: 8px; margin: 5px 0; border-left: 3px solid #667eea;'>
+                    🎯 {holiday['date'].strftime('%d/%m/%Y')} - {holiday['name']}
+                </div>
+                """, unsafe_allow_html=True)
         else:
-            st.write("No hay festivos personalizados")
+            st.info("No hay festivos personalizados")
 
 def main():
     """Función principal"""
