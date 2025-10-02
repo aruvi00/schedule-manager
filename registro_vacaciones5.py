@@ -692,7 +692,7 @@ def main_app():
     
     year_col1, year_col2 = st.columns([3, 1])
     with year_col1:
-        st.header(f'Calendario de Vacaciones {current_year}')
+        st.header(f'Registro de Jornada - Año {current_year}')
     with year_col2:
         selected_year = st.selectbox(
             "Año:",
@@ -907,7 +907,7 @@ def main_app():
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.subheader("🏖️ Días de Vacaciones")
+        st.subheader("Días de Vacaciones")
         vacation_dates = [d for d in vacation_data['used_days'] if datetime.strptime(d, '%Y-%m-%d').year == selected_year]
         vacation_dates.sort()
         
@@ -919,7 +919,7 @@ def main_app():
             st.write("No hay días de vacaciones registrados")
     
     with col2:
-        st.subheader("🎉 Festivos Oficiales")
+        st.subheader("Festivos Oficiales")
         festivos = get_madrid_holidays(selected_year)
         festivos_sorted = sorted(festivos.items())
         
@@ -927,7 +927,7 @@ def main_app():
             st.write(f"• {fecha.strftime('%d/%m/%Y')} - {nombre}")
     
     with col3:
-        st.subheader("🏛️ Festivos Personalizados")
+        st.subheader("Festivos Personalizados")
         custom_holidays_data = vacation_data.get('custom_holidays', [])
         custom_holidays_display = []
         
