@@ -1,0 +1,17 @@
+{
+    "total_days": 22,
+    "used_days": [
+        "2025-01-01",
+        "2025-11-11",
+        "2025-11-12",
+        "2025-11-13",
+        "2025-11-14"
+    ],
+    "custom_holidays": [
+        "2025-11-20"
+    ],
+    "full_name": "DAVID RUIZ VITTE",
+    "nif": "77992266D",
+    "workplace": "E.T.S. DE INGENIEROS DE TELECOMUNICACI\u00d3N",
+    "company": "UPM"
+}
