@@ -436,12 +436,19 @@ def check_session_timeout():
 def get_madrid_holidays(year, custom_days=[]):
     """Obtener festivos de Madrid"""
     madrid_holidays = holidays.Spain(years=year, subdiv='MD')
-    for custom_day_str in custom_days:
+    for custom_day_dict in custom_days:
         try:
-            custom_date = datetime.strptime(custom_day_str, '%Y-%m-%d').date()
+            if isinstance(custom_day_dict, dict):
+                custom_date = datetime.strptime(custom_day_dict['date'], '%Y-%m-%d').date()
+                custom_name = custom_day_dict.get('name', 'Festivo personalizado')
+            else:
+                # Compatibilidad con formato antiguo (solo string)
+                custom_date = datetime.strptime(custom_day_dict, '%Y-%m-%d').date()
+                custom_name = "Festivo personalizado"
+            
             if custom_date.year == year:
-                madrid_holidays.append({custom_date: "Festivo personalizado"})
-        except ValueError:
+                madrid_holidays.append({custom_date: custom_name})
+        except (ValueError, KeyError):
             pass
     return madrid_holidays
 
@@ -695,6 +702,10 @@ def main_app():
     
     eventos = create_calendar_events(vacation_data, selected_year)
     
+    # Usar la fecha de hoy si el año seleccionado es el actual, si no enero
+    today = date.today()
+    initial_date = today.strftime('%Y-%m-%d') if selected_year == today.year else f"{selected_year}-01-01"
+    
     calendar_config = {
         "initialView": "dayGridMonth",
         "headerToolbar": {
@@ -710,7 +721,7 @@ def main_app():
         "editable": False,
         "height": 600,
         "locale": "es",
-        "initialDate": f"{selected_year}-01-01",
+        "initialDate": initial_date,
         "selectConstraint": {
             "start": f"{selected_year}-01-01",
             "end": f"{selected_year}-12-31"
@@ -823,8 +834,34 @@ def main_app():
         if st.button("➕ Añadir Festivo Personalizado"):
             if custom_name:
                 custom_date_str = custom_date.strftime('%Y-%m-%d')
-                if custom_date_str not in vacation_data['custom_holidays']:
-                    vacation_data['custom_holidays'].append(custom_date_str)
+                # Verificar si ya existe
+                already_exists = False
+                for holiday in vacation_data.get('custom_holidays', []):
+                    if isinstance(holiday, dict):
+                        if holiday['date'] == custom_date_str:
+                            already_exists = True
+                            break
+                    elif holiday == custom_date_str:
+                        already_exists = True
+                        break
+                
+                if not already_exists:
+                    # Convertir formato antiguo si existe
+                    if 'custom_holidays' not in vacation_data:
+                        vacation_data['custom_holidays'] = []
+                    
+                    # Convertir strings antiguos a nuevo formato
+                    new_holidays = []
+                    for h in vacation_data['custom_holidays']:
+                        if isinstance(h, str):
+                            new_holidays.append({'date': h, 'name': 'Festivo personalizado'})
+                        else:
+                            new_holidays.append(h)
+                    
+                    # Añadir el nuevo festivo
+                    new_holidays.append({'date': custom_date_str, 'name': custom_name})
+                    vacation_data['custom_holidays'] = new_holidays
+                    
                     save_vacation_data(username, vacation_data)
                     st.success(f"Festivo '{custom_name}' añadido")
                     st.rerun()
@@ -891,13 +928,37 @@ def main_app():
     
     with col3:
         st.subheader("🏛️ Festivos Personalizados")
-        custom_holidays = [d for d in vacation_data.get('custom_holidays', []) if datetime.strptime(d, '%Y-%m-%d').year == selected_year]
-        custom_holidays.sort()
+        custom_holidays_data = vacation_data.get('custom_holidays', [])
+        custom_holidays_display = []
         
-        if custom_holidays:
-            for date_str in custom_holidays:
-                date_obj = datetime.strptime(date_str, '%Y-%m-%d')
-                st.write(f"• {date_obj.strftime('%d/%m/%Y')} - Festivo personalizado")
+        for holiday in custom_holidays_data:
+            if isinstance(holiday, dict):
+                try:
+                    date_obj = datetime.strptime(holiday['date'], '%Y-%m-%d')
+                    if date_obj.year == selected_year:
+                        custom_holidays_display.append({
+                            'date': date_obj,
+                            'name': holiday.get('name', 'Festivo personalizado')
+                        })
+                except ValueError:
+                    pass
+            else:
+                # Formato antiguo (solo string)
+                try:
+                    date_obj = datetime.strptime(holiday, '%Y-%m-%d')
+                    if date_obj.year == selected_year:
+                        custom_holidays_display.append({
+                            'date': date_obj,
+                            'name': 'Festivo personalizado'
+                        })
+                except ValueError:
+                    pass
+        
+        custom_holidays_display.sort(key=lambda x: x['date'])
+        
+        if custom_holidays_display:
+            for holiday in custom_holidays_display:
+                st.write(f"• {holiday['date'].strftime('%d/%m/%Y')} - {holiday['name']}")
         else:
             st.write("No hay festivos personalizados")
 
