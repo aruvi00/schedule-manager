@@ -1,7 +1,12 @@
 {
     "total_days": 30,
     "used_days": [],
-    "custom_holidays": [],
+    "custom_holidays": [
+        {
+            "date": "2025-09-29",
+            "name": "San Teleco"
+        }
+    ],
     "full_name": "TAMAGNINI, ANTONELA",
     "nif": "Z3538306Z",
     "workplace": "E.T.S. DE INGENIEROS DE TELECOMUNICACI\u00d3N",
