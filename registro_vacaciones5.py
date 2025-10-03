@@ -555,11 +555,13 @@ def fill_pdf_template(selected_month, used_days, vacation_data):
                         fields[cell_index + 2].field_value = "13:00"
                         fields[cell_index + 3].field_value = "14:00"
                         fields[cell_index + 4].field_value = "17:30"
+                        fields[cell_index + 7].field_value = "7,5"
                         
                         fields[cell_index + 1].update()
                         fields[cell_index + 2].update()
                         fields[cell_index + 3].update()
                         fields[cell_index + 4].update()
+                        fields[cell_index + 7].update()
                     cell_index += 9
                 
                 if not workdays:
