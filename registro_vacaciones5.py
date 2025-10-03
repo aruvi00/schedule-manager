@@ -641,6 +641,58 @@ def main_app():
                     st.error(f"❌ Error al leer el archivo: {str(e)}")
         
         st.markdown("---")
+
+        # Editar datos personales
+        with st.expander("✏️ Editar datos personales"):
+            st.write("Modifica tu información personal")
+            
+            new_full_name = st.text_input(
+                "Nombre completo:",
+                value=vacation_data.get('full_name', ''),
+                key="edit_name"
+            )
+            
+            new_nif = st.text_input(
+                "NIF/DNI:",
+                value=vacation_data.get('nif', ''),
+                max_chars=9,
+                key="edit_nif"
+            )
+            
+            new_workplace = st.text_input(
+                "Centro de trabajo:",
+                value=vacation_data.get('workplace', ''),
+                key="edit_workplace"
+            )
+            
+            new_company = st.text_input(
+                "Empresa:",
+                value=vacation_data.get('company', ''),
+                key="edit_company"
+            )
+            
+            if st.button("💾 Guardar cambios", type="primary", key="save_personal_data"):
+                # Actualizar vacation_data
+                vacation_data['full_name'] = new_full_name
+                vacation_data['nif'] = new_nif.upper()
+                vacation_data['workplace'] = new_workplace
+                vacation_data['company'] = new_company
+                
+                # Guardar en GitHub
+                save_vacation_data(username, vacation_data)
+                
+                # Actualizar también en users.json
+                users = load_users()
+                if username in users:
+                    users[username]['full_name'] = new_full_name
+                    users[username]['nif'] = new_nif.upper()
+                    users[username]['workplace'] = new_workplace
+                    users[username]['company'] = new_company
+                    save_users(users)
+                
+                st.success("✅ Datos actualizados correctamente")
+                time.sleep(1)
+                st.rerun()
         
         total_days = st.number_input(
             'Días laborables libres al año:',
