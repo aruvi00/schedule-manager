@@ -330,295 +330,6 @@ def register_form():
                 else:
                     st.error("❌ Error al crear la cuenta. Inténtalo de nuevo.")
 
-def simple_recovery_form():
-    """Recuperación simple solo con DNI"""
-    st.markdown("""
-    <style>
-    .recovery-title {
-        text-align: center;
-        color: #000;
-        margin-bottom: 1.5rem;
-        font-size: 1.8rem;
-        font-weight: 600;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns([1, 2, 1])
-    
-    with col2:
-        st.markdown('<div class="recovery-title">🔑 Recuperar Acceso</div>', unsafe_allow_html=True)
-        
-        st.info("💡 Solo necesitas tu DNI/NIF para recuperar tu cuenta")
-        
-        with st.form("simple_recovery_form", clear_on_submit=False):
-            search_dni = st.text_input(
-                "DNI/NIF",
-                placeholder="Ej: 12345678X",
-                help="Ingresa tu DNI/NIF registrado (sin espacios)",
-                max_chars=9
-            )
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            col_btn1, col_btn2 = st.columns(2)
-            
-            with col_btn1:
-                submit_button = st.form_submit_button(
-                    "🔍 Buscar mi cuenta",
-                    use_container_width=True,
-                    type="primary"
-                )
-            
-            with col_btn2:
-                cancel_button = st.form_submit_button(
-                    "Cancelar",
-                    use_container_width=True
-                )
-            
-            if cancel_button:
-                st.session_state.show_simple_recovery = False
-                st.rerun()
-            
-            if submit_button:
-                if not search_dni:
-                    st.error("❌ Por favor ingresa tu DNI/NIF")
-                    return
-                
-                search_dni = search_dni.upper()
-                users = load_users()
-                found_user = None
-                found_username = None
-                
-                # Buscar usuario por DNI
-                for username, user_data in users.items():
-                    if user_data.get('nif', '').upper() == search_dni:
-                        found_user = user_data
-                        found_username = username
-                        break
-                
-                if found_user:
-                    st.session_state['recovery_user'] = found_username
-                    st.session_state['recovery_data'] = found_user
-                    st.rerun()
-                else:
-                    st.error(f"❌ No se encontró ninguna cuenta con el DNI: {search_dni}")
-        
-        # Si encontró usuario, mostrar formulario de reset
-        if 'recovery_user' in st.session_state:
-            st.markdown("---")
-            st.success(f"✅ Cuenta encontrada: **{st.session_state['recovery_data'].get('full_name', 'N/A')}**")
-            st.info(f"👤 Tu usuario es: **{st.session_state['recovery_user']}**")
-            
-            st.markdown("### 🔒 Establecer Nueva Contraseña")
-            
-            with st.form("set_new_password", clear_on_submit=False):
-                new_password = st.text_input(
-                    "Nueva contraseña:",
-                    type="password",
-                    placeholder="Mínimo 4 caracteres"
-                )
-                
-                confirm_password = st.text_input(
-                    "Confirmar contraseña:",
-                    type="password",
-                    placeholder="Repite la contraseña"
-                )
-                
-                st.markdown("<br>", unsafe_allow_html=True)
-                
-                if st.form_submit_button("💾 Restablecer Contraseña", type="primary", use_container_width=True):
-                    if not new_password or not confirm_password:
-                        st.error("❌ Completa ambos campos")
-                    elif new_password != confirm_password:
-                        st.error("❌ Las contraseñas no coinciden")
-                    elif len(new_password) < 4:
-                        st.error("❌ La contraseña debe tener al menos 4 caracteres")
-                    else:
-                        username = st.session_state['recovery_user']
-                        users = load_users()
-                        users[username]['password'] = hash_password(new_password)
-                        
-                        if save_users(users):
-                            st.success(f"""
-                            ✅ **¡Contraseña restablecida correctamente!**
-                            
-                            📋 Tus datos de acceso:
-                            - **Usuario:** {username}
-                            - **Contraseña:** (la que acabas de crear)
-                            
-                            Ya puedes iniciar sesión.
-                            """)
-                            
-                            # Limpiar datos de recuperación
-                            del st.session_state['recovery_user']
-                            del st.session_state['recovery_data']
-                            
-                            time.sleep(3)
-                            st.session_state.show_simple_recovery = False
-                            st.rerun()
-                        else:
-                            st.error("❌ Error al actualizar la contraseña. Inténtalo de nuevo.")
-
-def admin_panel():
-    """Panel de administrador para buscar usuarios por DNI"""
-    st.markdown("""
-    <style>
-    .admin-title {
-        text-align: center;
-        color: #FF6B6B;
-        margin-bottom: 1.5rem;
-        font-size: 1.8rem;
-        font-weight: 600;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns([1, 2, 1])
-    
-    with col2:
-        st.markdown('<div class="admin-title">👨‍💼 Panel de Administrador</div>', unsafe_allow_html=True)
-        
-        # Autenticación de admin
-        if not st.session_state.get('admin_authenticated', False):
-            with st.form("admin_login"):
-                admin_user = st.text_input("Usuario Admin", placeholder="admin")
-                admin_pass = st.text_input("Contraseña Admin", type="password")
-                
-                col_adm1, col_adm2 = st.columns(2)
-                
-                with col_adm1:
-                    login_btn = st.form_submit_button("Acceder", type="primary", use_container_width=True)
-                
-                with col_adm2:
-                    cancel_btn = st.form_submit_button("Volver", use_container_width=True)
-                
-                if cancel_btn:
-                    st.session_state.show_admin = False
-                    st.rerun()
-                
-                if login_btn:
-                    try:
-                        if (admin_user == st.secrets.get("ADMIN_USERNAME", "admin") and 
-                            admin_pass == st.secrets.get("ADMIN_PASSWORD", "admin123")):
-                            st.session_state['admin_authenticated'] = True
-                            st.success("✅ Acceso concedido")
-                            time.sleep(1)
-                            st.rerun()
-                        else:
-                            st.error("❌ Credenciales incorrectas")
-                    except:
-                        st.error("❌ Configuración de admin no encontrada en secrets")
-        else:
-            # Panel de búsqueda
-            st.markdown("### 🔍 Buscar Usuario por DNI/NIF")
-            
-            search_dni = st.text_input(
-                "Ingresa el DNI/NIF:",
-                placeholder="12345678X",
-                max_chars=9
-            ).upper()
-            
-            if st.button("🔍 Buscar", type="primary"):
-                if search_dni:
-                    users = load_users()
-                    found_users = []
-                    
-                    # Buscar en users.json
-                    for username, user_data in users.items():
-                        if user_data.get('nif', '').upper() == search_dni:
-                            found_users.append({
-                                'username': username,
-                                'full_name': user_data.get('full_name', 'N/A'),
-                                'nif': user_data.get('nif', 'N/A'),
-                                'workplace': user_data.get('workplace', 'N/A'),
-                                'company': user_data.get('company', 'N/A'),
-                                'created_at': user_data.get('created_at', 'N/A')
-                            })
-                    
-                    if found_users:
-                        st.success(f"✅ Se encontraron {len(found_users)} usuario(s)")
-                        
-                        for user in found_users:
-                            st.markdown("---")
-                            st.markdown("### 📋 Información del Usuario")
-                            
-                            col_info1, col_info2 = st.columns(2)
-                            
-                            with col_info1:
-                                st.write(f"**Usuario:** {user['username']}")
-                                st.write(f"**Nombre:** {user['full_name']}")
-                                st.write(f"**DNI/NIF:** {user['nif']}")
-                            
-                            with col_info2:
-                                st.write(f"**Centro:** {user['workplace']}")
-                                st.write(f"**Empresa:** {user['company']}")
-                                st.write(f"**Creado:** {user['created_at'][:10] if user['created_at'] != 'N/A' else 'N/A'}")
-                            
-                            st.warning("⚠️ **NOTA:** Las contraseñas están encriptadas y NO se pueden recuperar. Solo se pueden restablecer.")
-                            
-                            # Formulario para restablecer contraseña
-                            with st.expander("🔑 Restablecer Contraseña"):
-                                new_pwd = st.text_input(
-                                    "Nueva contraseña:",
-                                    type="password",
-                                    key=f"new_pwd_{user['username']}"
-                                )
-                                
-                                confirm_pwd = st.text_input(
-                                    "Confirmar contraseña:",
-                                    type="password",
-                                    key=f"confirm_pwd_{user['username']}"
-                                )
-                                
-                                if st.button(f"💾 Restablecer para {user['username']}", key=f"reset_{user['username']}"):
-                                    if not new_pwd or not confirm_pwd:
-                                        st.error("❌ Completa ambos campos")
-                                    elif new_pwd != confirm_pwd:
-                                        st.error("❌ Las contraseñas no coinciden")
-                                    elif len(new_pwd) < 4:
-                                        st.error("❌ Mínimo 4 caracteres")
-                                    else:
-                                        users[user['username']]['password'] = hash_password(new_pwd)
-                                        if save_users(users):
-                                            st.success(f"✅ Contraseña restablecida para {user['username']}")
-                                            st.info(f"📧 Comunica al usuario: Usuario={user['username']}, Contraseña={new_pwd}")
-                                        else:
-                                            st.error("❌ Error al guardar")
-                    else:
-                        st.error(f"❌ No se encontró ningún usuario con el DNI: {search_dni}")
-                else:
-                    st.warning("⚠️ Ingresa un DNI/NIF")
-            
-            st.markdown("---")
-            
-            col_btn1, col_btn2 = st.columns(2)
-            with col_btn1:
-                if st.button("📊 Ver Todos los Usuarios"):
-                    users = load_users()
-                    st.markdown("### 👥 Todos los Usuarios")
-                    
-                    users_list = []
-                    for username, data in users.items():
-                        users_list.append({
-                            'Usuario': username,
-                            'Nombre': data.get('full_name', 'N/A'),
-                            'DNI': data.get('nif', 'N/A'),
-                            'Empresa': data.get('company', 'N/A')
-                        })
-                    
-                    if users_list:
-                        df = pd.DataFrame(users_list)
-                        st.dataframe(df, use_container_width=True)
-                    else:
-                        st.info("No hay usuarios registrados")
-            
-            with col_btn2:
-                if st.button("🚪 Cerrar Admin"):
-                    st.session_state.admin_authenticated = False
-                    st.session_state.show_admin = False
-                    st.rerun()
-
 def login_form():
     """Formulario de login"""
     st.markdown("""
@@ -701,24 +412,8 @@ def login_form():
         
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # BOTONES DE NAVEGACIÓN
-        col_btn1, col_btn2 = st.columns(2)
-        
-        with col_btn1:
-            if st.button("📝 Crear cuenta", use_container_width=True):
-                st.session_state.show_register = True
-                st.rerun()
-        
-        with col_btn2:
-            if st.button("🔑 Recuperar acceso", use_container_width=True):
-                st.session_state.show_simple_recovery = True
-                st.rerun()
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        # BOTÓN ADMIN
-        if st.button("👨‍💼 Acceso Admin", use_container_width=True, type="secondary"):
-            st.session_state.show_admin = True
+        if st.button("📝 Crear nueva cuenta", use_container_width=True):
+            st.session_state.show_register = True
             st.rerun()
 
 def logout():
@@ -747,6 +442,7 @@ def get_madrid_holidays(year, custom_days=[]):
                 custom_date = datetime.strptime(custom_day_dict['date'], '%Y-%m-%d').date()
                 custom_name = custom_day_dict.get('name', 'Festivo personalizado')
             else:
+                # Compatibilidad con formato antiguo (solo string)
                 custom_date = datetime.strptime(custom_day_dict, '%Y-%m-%d').date()
                 custom_name = "Festivo personalizado"
             
@@ -897,6 +593,7 @@ def main_app():
     with st.sidebar:
         st.header("⚙️ Configuración")
         
+        # Botón para importar datos
         with st.expander("📥 Importar datos de vacaciones"):
             st.write("Importa días de vacaciones y festivos desde un archivo JSON")
             
@@ -926,6 +623,7 @@ def main_app():
                     
                     with col_imp2:
                         if st.button("➕ Importar y combinar"):
+                            # Combinar sin duplicados
                             existing_used = set(vacation_data['used_days'])
                             existing_holidays = set(vacation_data.get('custom_holidays', []))
                             
@@ -944,6 +642,7 @@ def main_app():
         
         st.markdown("---")
 
+        # Editar datos personales
         with st.expander("✏️ Editar datos personales"):
             st.write("Modifica tu información personal")
             
@@ -973,13 +672,16 @@ def main_app():
             )
             
             if st.button("💾 Guardar cambios", type="primary", key="save_personal_data"):
+                # Actualizar vacation_data
                 vacation_data['full_name'] = new_full_name
                 vacation_data['nif'] = new_nif.upper()
                 vacation_data['workplace'] = new_workplace
                 vacation_data['company'] = new_company
                 
+                # Guardar en GitHub
                 save_vacation_data(username, vacation_data)
                 
+                # Actualizar también en users.json
                 users = load_users()
                 if username in users:
                     users[username]['full_name'] = new_full_name
@@ -1020,6 +722,7 @@ def main_app():
             st.success('Días de vacaciones reseteados')
             st.rerun()
         
+        # Exportar datos
         st.markdown("---")
         with st.expander("📤 Exportar datos"):
             st.write("Descarga tus datos de vacaciones como respaldo")
@@ -1053,6 +756,7 @@ def main_app():
     
     eventos = create_calendar_events(vacation_data, selected_year)
     
+    # Usar la fecha de hoy si el año seleccionado es el actual, si no enero
     today = date.today()
     initial_date = today.strftime('%Y-%m-%d') if selected_year == today.year else f"{selected_year}-01-01"
     
@@ -1184,6 +888,7 @@ def main_app():
         if st.button("➕ Añadir Festivo Personalizado"):
             if custom_name:
                 custom_date_str = custom_date.strftime('%Y-%m-%d')
+                # Verificar si ya existe
                 already_exists = False
                 for holiday in vacation_data.get('custom_holidays', []):
                     if isinstance(holiday, dict):
@@ -1195,9 +900,11 @@ def main_app():
                         break
                 
                 if not already_exists:
+                    # Convertir formato antiguo si existe
                     if 'custom_holidays' not in vacation_data:
                         vacation_data['custom_holidays'] = []
                     
+                    # Convertir strings antiguos a nuevo formato
                     new_holidays = []
                     for h in vacation_data['custom_holidays']:
                         if isinstance(h, str):
@@ -1205,6 +912,7 @@ def main_app():
                         else:
                             new_holidays.append(h)
                     
+                    # Añadir el nuevo festivo
                     new_holidays.append({'date': custom_date_str, 'name': custom_name})
                     vacation_data['custom_holidays'] = new_holidays
                     
@@ -1289,6 +997,7 @@ def main_app():
                 except ValueError:
                     pass
             else:
+                # Formato antiguo (solo string)
                 try:
                     date_obj = datetime.strptime(holiday, '%Y-%m-%d')
                     if date_obj.year == selected_year:
@@ -1313,15 +1022,14 @@ def main():
         if not check_session_timeout():
             return
     
-    if st.session_state.get('show_admin', False):
-        admin_panel()
-    elif st.session_state.get('show_simple_recovery', False):
-        simple_recovery_form()
-    elif st.session_state.get('show_register', False):
+    # Mostrar formulario de registro si está activado
+    if st.session_state.get('show_register', False):
         register_form()
+    # Mostrar login si no está autenticado
     elif not check_authentication():
         login_form()
     else:
+        # Mostrar la aplicación principal
         main_app()
 
 if __name__ == '__main__':
