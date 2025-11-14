@@ -61,108 +61,6 @@ def load_users():
     except:
         return {}
 
-def reset_password_form():
-    """Formulario de recuperación de contraseña"""
-    st.markdown("""
-    <style>
-    .reset-title {
-        text-align: center;
-        color: #000;
-        margin-bottom: 1.5rem;
-        font-size: 1.8rem;
-        font-weight: 600;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns([1, 2, 1])
-    
-    with col2:
-        st.markdown('<div class="reset-title">🔑 Recuperar Contraseña</div>', unsafe_allow_html=True)
-        
-        with st.form("reset_password_form", clear_on_submit=False):
-            username = st.text_input(
-                "Usuario",
-                placeholder="Ingresa tu usuario",
-                help="El usuario que usas para iniciar sesión"
-            )
-            
-            security_answer = st.text_input(
-                "Respuesta de seguridad",
-                placeholder="¿Cuál es tu NIF/DNI?",
-                help="Ingresa tu NIF/DNI registrado (sin espacios ni guiones)",
-                max_chars=9
-            )
-            
-            new_password = st.text_input(
-                "Nueva contraseña",
-                type="password",
-                placeholder="Ingresa tu nueva contraseña"
-            )
-            
-            confirm_password = st.text_input(
-                "Confirmar nueva contraseña",
-                type="password",
-                placeholder="Repite la nueva contraseña"
-            )
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            col_btn1, col_btn2 = st.columns(2)
-            
-            with col_btn1:
-                submit_button = st.form_submit_button(
-                    "Restablecer Contraseña",
-                    use_container_width=True,
-                    type="primary"
-                )
-            
-            with col_btn2:
-                cancel_button = st.form_submit_button(
-                    "Cancelar",
-                    use_container_width=True
-                )
-            
-            if cancel_button:
-                st.session_state.show_reset = False
-                st.rerun()
-            
-            if submit_button:
-                if not username or not security_answer or not new_password:
-                    st.error("❌ Por favor completa todos los campos")
-                    return
-                
-                if new_password != confirm_password:
-                    st.error("❌ Las contraseñas no coinciden")
-                    return
-                
-                if len(new_password) < 4:
-                    st.error("❌ La contraseña debe tener al menos 4 caracteres")
-                    return
-                
-                # Cargar usuarios
-                users = load_users()
-                
-                if username not in users:
-                    st.error("❌ Usuario no encontrado")
-                    return
-                
-                # Verificar NIF como respuesta de seguridad
-                if users[username].get('nif', '').upper() != security_answer.upper():
-                    st.error("❌ Respuesta de seguridad incorrecta")
-                    return
-                
-                # Actualizar contraseña
-                users[username]['password'] = hash_password(new_password)
-                
-                if save_users(users):
-                    st.success("✅ Contraseña restablecida correctamente. Ya puedes iniciar sesión.")
-                    time.sleep(2)
-                    st.session_state.show_reset = False
-                    st.rerun()
-                else:
-                    st.error("❌ Error al actualizar la contraseña. Inténtalo de nuevo.")
-
 def save_users(users_dict):
     """Guardar usuarios en GitHub"""
     token = st.secrets["GITHUB_TOKEN"]
@@ -432,6 +330,295 @@ def register_form():
                 else:
                     st.error("❌ Error al crear la cuenta. Inténtalo de nuevo.")
 
+def simple_recovery_form():
+    """Recuperación simple solo con DNI"""
+    st.markdown("""
+    <style>
+    .recovery-title {
+        text-align: center;
+        color: #000;
+        margin-bottom: 1.5rem;
+        font-size: 1.8rem;
+        font-weight: 600;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        st.markdown('<div class="recovery-title">🔑 Recuperar Acceso</div>', unsafe_allow_html=True)
+        
+        st.info("💡 Solo necesitas tu DNI/NIF para recuperar tu cuenta")
+        
+        with st.form("simple_recovery_form", clear_on_submit=False):
+            search_dni = st.text_input(
+                "DNI/NIF",
+                placeholder="Ej: 12345678X",
+                help="Ingresa tu DNI/NIF registrado (sin espacios)",
+                max_chars=9
+            )
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            col_btn1, col_btn2 = st.columns(2)
+            
+            with col_btn1:
+                submit_button = st.form_submit_button(
+                    "🔍 Buscar mi cuenta",
+                    use_container_width=True,
+                    type="primary"
+                )
+            
+            with col_btn2:
+                cancel_button = st.form_submit_button(
+                    "Cancelar",
+                    use_container_width=True
+                )
+            
+            if cancel_button:
+                st.session_state.show_simple_recovery = False
+                st.rerun()
+            
+            if submit_button:
+                if not search_dni:
+                    st.error("❌ Por favor ingresa tu DNI/NIF")
+                    return
+                
+                search_dni = search_dni.upper()
+                users = load_users()
+                found_user = None
+                found_username = None
+                
+                # Buscar usuario por DNI
+                for username, user_data in users.items():
+                    if user_data.get('nif', '').upper() == search_dni:
+                        found_user = user_data
+                        found_username = username
+                        break
+                
+                if found_user:
+                    st.session_state['recovery_user'] = found_username
+                    st.session_state['recovery_data'] = found_user
+                    st.rerun()
+                else:
+                    st.error(f"❌ No se encontró ninguna cuenta con el DNI: {search_dni}")
+        
+        # Si encontró usuario, mostrar formulario de reset
+        if 'recovery_user' in st.session_state:
+            st.markdown("---")
+            st.success(f"✅ Cuenta encontrada: **{st.session_state['recovery_data'].get('full_name', 'N/A')}**")
+            st.info(f"👤 Tu usuario es: **{st.session_state['recovery_user']}**")
+            
+            st.markdown("### 🔒 Establecer Nueva Contraseña")
+            
+            with st.form("set_new_password", clear_on_submit=False):
+                new_password = st.text_input(
+                    "Nueva contraseña:",
+                    type="password",
+                    placeholder="Mínimo 4 caracteres"
+                )
+                
+                confirm_password = st.text_input(
+                    "Confirmar contraseña:",
+                    type="password",
+                    placeholder="Repite la contraseña"
+                )
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                if st.form_submit_button("💾 Restablecer Contraseña", type="primary", use_container_width=True):
+                    if not new_password or not confirm_password:
+                        st.error("❌ Completa ambos campos")
+                    elif new_password != confirm_password:
+                        st.error("❌ Las contraseñas no coinciden")
+                    elif len(new_password) < 4:
+                        st.error("❌ La contraseña debe tener al menos 4 caracteres")
+                    else:
+                        username = st.session_state['recovery_user']
+                        users = load_users()
+                        users[username]['password'] = hash_password(new_password)
+                        
+                        if save_users(users):
+                            st.success(f"""
+                            ✅ **¡Contraseña restablecida correctamente!**
+                            
+                            📋 Tus datos de acceso:
+                            - **Usuario:** {username}
+                            - **Contraseña:** (la que acabas de crear)
+                            
+                            Ya puedes iniciar sesión.
+                            """)
+                            
+                            # Limpiar datos de recuperación
+                            del st.session_state['recovery_user']
+                            del st.session_state['recovery_data']
+                            
+                            time.sleep(3)
+                            st.session_state.show_simple_recovery = False
+                            st.rerun()
+                        else:
+                            st.error("❌ Error al actualizar la contraseña. Inténtalo de nuevo.")
+
+def admin_panel():
+    """Panel de administrador para buscar usuarios por DNI"""
+    st.markdown("""
+    <style>
+    .admin-title {
+        text-align: center;
+        color: #FF6B6B;
+        margin-bottom: 1.5rem;
+        font-size: 1.8rem;
+        font-weight: 600;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        st.markdown('<div class="admin-title">👨‍💼 Panel de Administrador</div>', unsafe_allow_html=True)
+        
+        # Autenticación de admin
+        if not st.session_state.get('admin_authenticated', False):
+            with st.form("admin_login"):
+                admin_user = st.text_input("Usuario Admin", placeholder="admin")
+                admin_pass = st.text_input("Contraseña Admin", type="password")
+                
+                col_adm1, col_adm2 = st.columns(2)
+                
+                with col_adm1:
+                    login_btn = st.form_submit_button("Acceder", type="primary", use_container_width=True)
+                
+                with col_adm2:
+                    cancel_btn = st.form_submit_button("Volver", use_container_width=True)
+                
+                if cancel_btn:
+                    st.session_state.show_admin = False
+                    st.rerun()
+                
+                if login_btn:
+                    try:
+                        if (admin_user == st.secrets.get("ADMIN_USERNAME", "admin") and 
+                            admin_pass == st.secrets.get("ADMIN_PASSWORD", "admin123")):
+                            st.session_state['admin_authenticated'] = True
+                            st.success("✅ Acceso concedido")
+                            time.sleep(1)
+                            st.rerun()
+                        else:
+                            st.error("❌ Credenciales incorrectas")
+                    except:
+                        st.error("❌ Configuración de admin no encontrada en secrets")
+        else:
+            # Panel de búsqueda
+            st.markdown("### 🔍 Buscar Usuario por DNI/NIF")
+            
+            search_dni = st.text_input(
+                "Ingresa el DNI/NIF:",
+                placeholder="12345678X",
+                max_chars=9
+            ).upper()
+            
+            if st.button("🔍 Buscar", type="primary"):
+                if search_dni:
+                    users = load_users()
+                    found_users = []
+                    
+                    # Buscar en users.json
+                    for username, user_data in users.items():
+                        if user_data.get('nif', '').upper() == search_dni:
+                            found_users.append({
+                                'username': username,
+                                'full_name': user_data.get('full_name', 'N/A'),
+                                'nif': user_data.get('nif', 'N/A'),
+                                'workplace': user_data.get('workplace', 'N/A'),
+                                'company': user_data.get('company', 'N/A'),
+                                'created_at': user_data.get('created_at', 'N/A')
+                            })
+                    
+                    if found_users:
+                        st.success(f"✅ Se encontraron {len(found_users)} usuario(s)")
+                        
+                        for user in found_users:
+                            st.markdown("---")
+                            st.markdown("### 📋 Información del Usuario")
+                            
+                            col_info1, col_info2 = st.columns(2)
+                            
+                            with col_info1:
+                                st.write(f"**Usuario:** {user['username']}")
+                                st.write(f"**Nombre:** {user['full_name']}")
+                                st.write(f"**DNI/NIF:** {user['nif']}")
+                            
+                            with col_info2:
+                                st.write(f"**Centro:** {user['workplace']}")
+                                st.write(f"**Empresa:** {user['company']}")
+                                st.write(f"**Creado:** {user['created_at'][:10] if user['created_at'] != 'N/A' else 'N/A'}")
+                            
+                            st.warning("⚠️ **NOTA:** Las contraseñas están encriptadas y NO se pueden recuperar. Solo se pueden restablecer.")
+                            
+                            # Formulario para restablecer contraseña
+                            with st.expander("🔑 Restablecer Contraseña"):
+                                new_pwd = st.text_input(
+                                    "Nueva contraseña:",
+                                    type="password",
+                                    key=f"new_pwd_{user['username']}"
+                                )
+                                
+                                confirm_pwd = st.text_input(
+                                    "Confirmar contraseña:",
+                                    type="password",
+                                    key=f"confirm_pwd_{user['username']}"
+                                )
+                                
+                                if st.button(f"💾 Restablecer para {user['username']}", key=f"reset_{user['username']}"):
+                                    if not new_pwd or not confirm_pwd:
+                                        st.error("❌ Completa ambos campos")
+                                    elif new_pwd != confirm_pwd:
+                                        st.error("❌ Las contraseñas no coinciden")
+                                    elif len(new_pwd) < 4:
+                                        st.error("❌ Mínimo 4 caracteres")
+                                    else:
+                                        users[user['username']]['password'] = hash_password(new_pwd)
+                                        if save_users(users):
+                                            st.success(f"✅ Contraseña restablecida para {user['username']}")
+                                            st.info(f"📧 Comunica al usuario: Usuario={user['username']}, Contraseña={new_pwd}")
+                                        else:
+                                            st.error("❌ Error al guardar")
+                    else:
+                        st.error(f"❌ No se encontró ningún usuario con el DNI: {search_dni}")
+                else:
+                    st.warning("⚠️ Ingresa un DNI/NIF")
+            
+            st.markdown("---")
+            
+            col_btn1, col_btn2 = st.columns(2)
+            with col_btn1:
+                if st.button("📊 Ver Todos los Usuarios"):
+                    users = load_users()
+                    st.markdown("### 👥 Todos los Usuarios")
+                    
+                    users_list = []
+                    for username, data in users.items():
+                        users_list.append({
+                            'Usuario': username,
+                            'Nombre': data.get('full_name', 'N/A'),
+                            'DNI': data.get('nif', 'N/A'),
+                            'Empresa': data.get('company', 'N/A')
+                        })
+                    
+                    if users_list:
+                        df = pd.DataFrame(users_list)
+                        st.dataframe(df, use_container_width=True)
+                    else:
+                        st.info("No hay usuarios registrados")
+            
+            with col_btn2:
+                if st.button("🚪 Cerrar Admin"):
+                    st.session_state.admin_authenticated = False
+                    st.session_state.show_admin = False
+                    st.rerun()
+
 def login_form():
     """Formulario de login"""
     st.markdown("""
@@ -514,7 +701,7 @@ def login_form():
         
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # AÑADE ESTOS BOTONES:
+        # BOTONES DE NAVEGACIÓN
         col_btn1, col_btn2 = st.columns(2)
         
         with col_btn1:
@@ -523,9 +710,16 @@ def login_form():
                 st.rerun()
         
         with col_btn2:
-            if st.button("🔑 Recuperar contraseña", use_container_width=True):
-                st.session_state.show_reset = True
+            if st.button("🔑 Recuperar acceso", use_container_width=True):
+                st.session_state.show_simple_recovery = True
                 st.rerun()
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # BOTÓN ADMIN
+        if st.button("👨‍💼 Acceso Admin", use_container_width=True, type="secondary"):
+            st.session_state.show_admin = True
+            st.rerun()
 
 def logout():
     """Cerrar sesión"""
@@ -590,563 +784,4 @@ def create_calendar_events(vacation_data, selected_year):
                     "title": "🏖️ Vacaciones",
                     "start": fecha.isoformat(),
                     "allDay": True,
-                    "color": "#4ECDC4",
-                    "textColor": "white"
-                })
-        except ValueError:
-            continue
-    
-    return eventos
-
-def fill_pdf_template(selected_month, used_days, vacation_data):
-    """Rellenar PDF con datos del usuario"""
-    month_name = format_date(selected_month, "LLLL", locale="es").upper()
-    OUTPUT_FILE = f'{month_name}_registro.pdf'
-
-    with fitz.open(TEMPLATE_FILE) as doc:
-        first_day = datetime(selected_month.year, selected_month.month, 1)
-        last_day = datetime(selected_month.year, selected_month.month, calendar.monthrange(selected_month.year, selected_month.month)[1])
-        madrid_holidays = get_madrid_holidays(selected_month.year, vacation_data['custom_holidays'])
-        workdays = [
-            day for day in pd.date_range(start=first_day, end=last_day)
-            if day.weekday() < 5
-        ]
-        
-        for page_index in range(len(doc)):
-            target_page = doc[page_index]
-            fields = list(target_page.widgets())
-            
-            if page_index == 0:
-                for f in fields:
-                    if f.field_name:
-                        fname = f.field_name.upper()
-                        if "MES" in fname:
-                            f.field_value = month_name
-                            f.update()
-                        if "AÑO" in fname or "ANIO" in fname:
-                            f.field_value = str(selected_month.year)
-                            f.update()
-                        if "CENTRO" in fname:
-                            f.field_value = vacation_data.get('workplace', '')
-                            f.update()
-                        if "NIF" in fname:
-                            f.field_value = vacation_data.get('nif', '')
-                            f.update()
-                        if "NOMBRE" in fname:
-                            f.field_value = vacation_data.get('full_name', '')
-                            f.update()
-                        if "EMPRESA" in fname:
-                            f.field_value = vacation_data.get('company', '')
-                            f.update()
-            
-            cell_index = 5 if page_index == 0 else 0
-            
-            while cell_index < len(fields) and workdays:
-                day = workdays.pop(0)
-                day_str = day.day
-                is_vacation = day.strftime('%Y-%m-%d') in used_days
-                is_festivo = day in madrid_holidays
-                
-                fields[cell_index].field_value = str(day_str)
-                fields[cell_index].update()
-                
-                if is_festivo:
-                    if cell_index + 8 < len(fields):
-                        fields[cell_index + 8].field_value = "FESTIVO"
-                        fields[cell_index + 8].update()
-                    cell_index += 9
-                elif is_vacation:
-                    if cell_index + 8 < len(fields):
-                        fields[cell_index + 8].field_value = "VACACIONES"
-                        fields[cell_index + 8].update()
-                    cell_index += 9
-                else:
-                    if cell_index + 4 < len(fields):
-                        fields[cell_index + 1].field_value = "9:00"
-                        fields[cell_index + 2].field_value = "13:00"
-                        fields[cell_index + 3].field_value = "14:00"
-                        fields[cell_index + 4].field_value = "17:30"
-                        fields[cell_index + 7].field_value = "7,5"
-                        
-                        fields[cell_index + 1].update()
-                        fields[cell_index + 2].update()
-                        fields[cell_index + 3].update()
-                        fields[cell_index + 4].update()
-                        fields[cell_index + 7].update()
-                    cell_index += 9
-                
-                if not workdays:
-                    break
-        
-        doc.save(OUTPUT_FILE)
-    return OUTPUT_FILE
-
-def main_app():
-    """Aplicación principal"""
-    username = st.session_state.get('username')
-    user_data = st.session_state.get('user_data', {})
-    
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.title(f'🗓️ Hola, {user_data.get("full_name", username)}')
-    with col2:
-        if st.button("🚪 Cerrar Sesión", type="secondary"):
-            logout()
-    
-    st.markdown("---")
-    
-    vacation_data = load_vacation_data(username)
-    
-    if not vacation_data:
-        st.error("Error al cargar datos de vacaciones")
-        return
-    
-    with st.sidebar:
-        st.header("⚙️ Configuración")
-        
-        # Botón para importar datos
-        with st.expander("📥 Importar datos de vacaciones"):
-            st.write("Importa días de vacaciones y festivos desde un archivo JSON")
-            
-            import_file = st.file_uploader(
-                "Sube vacation_data.json",
-                type=['json'],
-                key="import_existing"
-            )
-            
-            if import_file is not None:
-                try:
-                    imported_data = json.load(import_file)
-                    
-                    st.write("**Datos a importar:**")
-                    st.write(f"- Días de vacaciones: {len(imported_data.get('used_days', []))}")
-                    st.write(f"- Festivos personalizados: {len(imported_data.get('custom_holidays', []))}")
-                    
-                    col_imp1, col_imp2 = st.columns(2)
-                    
-                    with col_imp1:
-                        if st.button("✅ Importar y reemplazar", type="primary"):
-                            vacation_data['used_days'] = imported_data.get('used_days', [])
-                            vacation_data['custom_holidays'] = imported_data.get('custom_holidays', [])
-                            save_vacation_data(username, vacation_data)
-                            st.success("✅ Datos importados correctamente")
-                            st.rerun()
-                    
-                    with col_imp2:
-                        if st.button("➕ Importar y combinar"):
-                            # Combinar sin duplicados
-                            existing_used = set(vacation_data['used_days'])
-                            existing_holidays = set(vacation_data.get('custom_holidays', []))
-                            
-                            new_used = set(imported_data.get('used_days', []))
-                            new_holidays = set(imported_data.get('custom_holidays', []))
-                            
-                            vacation_data['used_days'] = list(existing_used | new_used)
-                            vacation_data['custom_holidays'] = list(existing_holidays | new_holidays)
-                            
-                            save_vacation_data(username, vacation_data)
-                            st.success("✅ Datos combinados correctamente")
-                            st.rerun()
-                            
-                except Exception as e:
-                    st.error(f"❌ Error al leer el archivo: {str(e)}")
-        
-        st.markdown("---")
-
-        # Editar datos personales
-        with st.expander("✏️ Editar datos personales"):
-            st.write("Modifica tu información personal")
-            
-            new_full_name = st.text_input(
-                "Nombre completo:",
-                value=vacation_data.get('full_name', ''),
-                key="edit_name"
-            )
-            
-            new_nif = st.text_input(
-                "NIF/DNI:",
-                value=vacation_data.get('nif', ''),
-                max_chars=9,
-                key="edit_nif"
-            )
-            
-            new_workplace = st.text_input(
-                "Centro de trabajo:",
-                value=vacation_data.get('workplace', ''),
-                key="edit_workplace"
-            )
-            
-            new_company = st.text_input(
-                "Empresa:",
-                value=vacation_data.get('company', ''),
-                key="edit_company"
-            )
-            
-            if st.button("💾 Guardar cambios", type="primary", key="save_personal_data"):
-                # Actualizar vacation_data
-                vacation_data['full_name'] = new_full_name
-                vacation_data['nif'] = new_nif.upper()
-                vacation_data['workplace'] = new_workplace
-                vacation_data['company'] = new_company
-                
-                # Guardar en GitHub
-                save_vacation_data(username, vacation_data)
-                
-                # Actualizar también en users.json
-                users = load_users()
-                if username in users:
-                    users[username]['full_name'] = new_full_name
-                    users[username]['nif'] = new_nif.upper()
-                    users[username]['workplace'] = new_workplace
-                    users[username]['company'] = new_company
-                    save_users(users)
-                
-                st.success("✅ Datos actualizados correctamente")
-                time.sleep(1)
-                st.rerun()
-        
-        total_days = st.number_input(
-            'Días laborables libres al año:',
-            min_value=0,
-            max_value=50,
-            value=vacation_data['total_days'],
-            help="Número total de días de vacaciones disponibles"
-        )
-        
-        if total_days != vacation_data['total_days']:
-            vacation_data['total_days'] = total_days
-            save_vacation_data(username, vacation_data)
-            st.success("Configuración actualizada")
-        
-        st.info("**Por contrato:** 30 días naturales por año trabajado")
-        
-        remaining_days = calculate_remaining_days(vacation_data['total_days'], vacation_data['used_days'])
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Total", vacation_data['total_days'])
-        with col2:
-            st.metric("Restantes", remaining_days)
-        
-        if st.button('🔄 Resetear Vacaciones', type="secondary"):
-            vacation_data['used_days'] = []
-            save_vacation_data(username, vacation_data)
-            st.success('Días de vacaciones reseteados')
-            st.rerun()
-        
-        # Exportar datos
-        st.markdown("---")
-        with st.expander("📤 Exportar datos"):
-            st.write("Descarga tus datos de vacaciones como respaldo")
-            
-            export_data = {
-                "total_days": vacation_data['total_days'],
-                "used_days": vacation_data['used_days'],
-                "custom_holidays": vacation_data.get('custom_holidays', [])
-            }
-            
-            export_json = json.dumps(export_data, indent=4)
-            
-            st.download_button(
-                label="⬇️ Descargar vacation_data.json",
-                data=export_json,
-                file_name=f"vacation_data_{username}.json",
-                mime="application/json"
-            )
-
-    current_year = date.today().year
-    
-    year_col1, year_col2 = st.columns([3, 1])
-    with year_col1:
-        st.header(f'Registro de Jornada - Año {current_year}')
-    with year_col2:
-        selected_year = st.selectbox(
-            "Año:",
-            options=[current_year - 1, current_year, current_year + 1],
-            index=1
-        )
-    
-    eventos = create_calendar_events(vacation_data, selected_year)
-    
-    # Usar la fecha de hoy si el año seleccionado es el actual, si no enero
-    today = date.today()
-    initial_date = today.strftime('%Y-%m-%d') if selected_year == today.year else f"{selected_year}-01-01"
-    
-    calendar_config = {
-        "initialView": "dayGridMonth",
-        "headerToolbar": {
-            "left": "prev,next today",
-            "center": "title",
-            "right": "dayGridMonth,timeGridWeek,timeGridDay"
-        },
-        "selectable": True,
-        "selectMirror": True,
-        "dayMaxEvents": True,
-        "weekends": True,
-        "navLinks": True,
-        "editable": False,
-        "height": 600,
-        "locale": "es",
-        "initialDate": initial_date,
-        "selectConstraint": {
-            "start": f"{selected_year}-01-01",
-            "end": f"{selected_year}-12-31"
-        }
-    }
-    
-    selected = my_calendar(
-        events=eventos,
-        options=calendar_config,
-        key=f"calendar_{selected_year}"
-    )
-    
-    if selected:
-        if "dateClick" in selected:
-            date_clicked = selected["dateClick"]["date"][:10]
-            st.session_state.selected_date = date_clicked
-        
-        if "select" in selected:
-            start_date = selected["select"]["start"][:10]
-            end_date = selected["select"]["end"][:10]
-            st.session_state.date_range = (start_date, end_date)
-    
-    st.markdown("---")
-    st.header("➕ Gestionar Días de Vacaciones")
-    
-    tab1, tab2, tab3 = st.tabs(["📅 Selección Individual", "📊 Selección Múltiple", "🎉 Festivos Personalizados"])
-    
-    with tab1:
-        if "selected_date" in st.session_state:
-            st.info(f"Fecha seleccionada: {st.session_state.selected_date}")
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("✅ Añadir como Vacaciones", type="primary"):
-                    if st.session_state.selected_date not in vacation_data["used_days"]:
-                        vacation_data["used_days"].append(st.session_state.selected_date)
-                        save_vacation_data(username, vacation_data)
-                        st.success("Día añadido correctamente")
-                        st.rerun()
-                    else:
-                        st.warning("Este día ya está registrado")
-            
-            with col2:
-                if st.button("❌ Eliminar Vacaciones", type="secondary"):
-                    if st.session_state.selected_date in vacation_data["used_days"]:
-                        vacation_data["used_days"].remove(st.session_state.selected_date)
-                        save_vacation_data(username, vacation_data)
-                        st.success("Día eliminado correctamente")
-                        st.rerun()
-                    else:
-                        st.warning("Este día no está registrado como vacaciones")
-    
-    with tab2:
-        start_date = date(selected_year, 1, 1)
-        end_date = date(selected_year, 12, 31)
-        
-        date_range = st.date_input(
-            "Selecciona el rango de fechas:",
-            value=(start_date, end_date),
-            min_value=start_date,
-            max_value=end_date,
-            help="Selecciona las fechas de inicio y fin"
-        )
-        
-        if len(date_range) == 2:
-            start_sel, end_sel = date_range
-            days_in_range = []
-            current_date = start_sel
-            while current_date <= end_sel:
-                if current_date.weekday() < 5:
-                    days_in_range.append(current_date.strftime('%Y-%m-%d'))
-                current_date += timedelta(days=1)
-            
-            st.info(f"Días laborables en el rango: {len(days_in_range)}")
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("✅ Añadir Rango como Vacaciones", type="primary"):
-                    added_days = 0
-                    for day in days_in_range:
-                        if day not in vacation_data["used_days"]:
-                            vacation_data["used_days"].append(day)
-                            added_days += 1
-                    save_vacation_data(username, vacation_data)
-                    st.success(f"Se añadieron {added_days} días de vacaciones")
-                    st.rerun()
-            
-            with col2:
-                if st.button("❌ Eliminar Rango de Vacaciones", type="secondary"):
-                    removed_days = 0
-                    for day in days_in_range:
-                        if day in vacation_data["used_days"]:
-                            vacation_data["used_days"].remove(day)
-                            removed_days += 1
-                    save_vacation_data(username, vacation_data)
-                    st.success(f"Se eliminaron {removed_days} días de vacaciones")
-                    st.rerun()
-    
-    with tab3:
-        st.write("Añade días festivos personalizados:")
-        
-        custom_date = st.date_input(
-            "Selecciona fecha para festivo personalizado:",
-            min_value=date(selected_year, 1, 1),
-            max_value=date(selected_year, 12, 31)
-        )
-        
-        custom_name = st.text_input("Nombre del festivo:", placeholder="Ej: Día del patrón local")
-        
-        if st.button("➕ Añadir Festivo Personalizado"):
-            if custom_name:
-                custom_date_str = custom_date.strftime('%Y-%m-%d')
-                # Verificar si ya existe
-                already_exists = False
-                for holiday in vacation_data.get('custom_holidays', []):
-                    if isinstance(holiday, dict):
-                        if holiday['date'] == custom_date_str:
-                            already_exists = True
-                            break
-                    elif holiday == custom_date_str:
-                        already_exists = True
-                        break
-                
-                if not already_exists:
-                    # Convertir formato antiguo si existe
-                    if 'custom_holidays' not in vacation_data:
-                        vacation_data['custom_holidays'] = []
-                    
-                    # Convertir strings antiguos a nuevo formato
-                    new_holidays = []
-                    for h in vacation_data['custom_holidays']:
-                        if isinstance(h, str):
-                            new_holidays.append({'date': h, 'name': 'Festivo personalizado'})
-                        else:
-                            new_holidays.append(h)
-                    
-                    # Añadir el nuevo festivo
-                    new_holidays.append({'date': custom_date_str, 'name': custom_name})
-                    vacation_data['custom_holidays'] = new_holidays
-                    
-                    save_vacation_data(username, vacation_data)
-                    st.success(f"Festivo '{custom_name}' añadido")
-                    st.rerun()
-                else:
-                    st.warning("Esta fecha ya está marcada como festivo")
-            else:
-                st.error("Por favor, introduce un nombre para el festivo")
-    
-    st.markdown("---")
-    st.header("📄 Generar Informe Mensual")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        today = datetime.today()
-        first_of_month = today.replace(day=1)
-        last_month = first_of_month - timedelta(days=1)
-        
-        selected_month = st.date_input(
-            'Selecciona el mes del informe:',
-            value=last_month,
-            min_value=date(selected_year, 1, 1),
-            max_value=date(selected_year, 12, 31)
-        )
-    
-    with col2:
-        if st.button('Generar Informe PDF', type="primary"):
-            try:
-                output_pdf = fill_pdf_template(selected_month, vacation_data['used_days'], vacation_data)
-                with open(output_pdf, 'rb') as f:
-                    st.download_button(
-                        label="⬇️ Descargar Informe",
-                        data=f,
-                        file_name=output_pdf,
-                        mime="application/pdf"
-                    )
-                st.success("Informe generado correctamente")
-            except Exception as e:
-                st.error(f"Error al generar el informe: {str(e)}")
-    
-    st.markdown("---")
-    st.header("Resumen")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.subheader("Días de Vacaciones")
-        vacation_dates = [d for d in vacation_data['used_days'] if datetime.strptime(d, '%Y-%m-%d').year == selected_year]
-        vacation_dates.sort()
-        
-        if vacation_dates:
-            for date_str in vacation_dates:
-                date_obj = datetime.strptime(date_str, '%Y-%m-%d')
-                st.write(f"• {date_obj.strftime('%d/%m/%Y')} - {date_obj.strftime('%A')}")
-        else:
-            st.write("No hay días de vacaciones registrados")
-    
-    with col2:
-        st.subheader("Festivos Oficiales")
-        festivos = get_madrid_holidays(selected_year)
-        festivos_sorted = sorted(festivos.items())
-        
-        for fecha, nombre in festivos_sorted:
-            st.write(f"• {fecha.strftime('%d/%m/%Y')} - {nombre}")
-    
-    with col3:
-        st.subheader("Festivos Personalizados")
-        custom_holidays_data = vacation_data.get('custom_holidays', [])
-        custom_holidays_display = []
-        
-        for holiday in custom_holidays_data:
-            if isinstance(holiday, dict):
-                try:
-                    date_obj = datetime.strptime(holiday['date'], '%Y-%m-%d')
-                    if date_obj.year == selected_year:
-                        custom_holidays_display.append({
-                            'date': date_obj,
-                            'name': holiday.get('name', 'Festivo personalizado')
-                        })
-                except ValueError:
-                    pass
-            else:
-                # Formato antiguo (solo string)
-                try:
-                    date_obj = datetime.strptime(holiday, '%Y-%m-%d')
-                    if date_obj.year == selected_year:
-                        custom_holidays_display.append({
-                            'date': date_obj,
-                            'name': 'Festivo personalizado'
-                        })
-                except ValueError:
-                    pass
-        
-        custom_holidays_display.sort(key=lambda x: x['date'])
-        
-        if custom_holidays_display:
-            for holiday in custom_holidays_display:
-                st.write(f"• {holiday['date'].strftime('%d/%m/%Y')} - {holiday['name']}")
-        else:
-            st.write("No hay festivos personalizados")
-
-def main():
-    """Función principal"""
-    if check_authentication():
-        if not check_session_timeout():
-            return
-    
-    # Mostrar formulario de recuperación de contraseña
-    if st.session_state.get('show_reset', False):
-        reset_password_form()
-    # Mostrar formulario de registro si está activado
-    elif st.session_state.get('show_register', False):
-        register_form()
-    # Mostrar login si no está autenticado
-    elif not check_authentication():
-        login_form()
-    else:
-        # Mostrar la aplicación principal
-        main_app()
-
-
-if __name__ == '__main__':
-
-    main()
+                    "color
