@@ -61,6 +61,108 @@ def load_users():
     except:
         return {}
 
+def reset_password_form():
+    """Formulario de recuperación de contraseña"""
+    st.markdown("""
+    <style>
+    .reset-title {
+        text-align: center;
+        color: #000;
+        margin-bottom: 1.5rem;
+        font-size: 1.8rem;
+        font-weight: 600;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        st.markdown('<div class="reset-title">🔑 Recuperar Contraseña</div>', unsafe_allow_html=True)
+        
+        with st.form("reset_password_form", clear_on_submit=False):
+            username = st.text_input(
+                "Usuario",
+                placeholder="Ingresa tu usuario",
+                help="El usuario que usas para iniciar sesión"
+            )
+            
+            security_answer = st.text_input(
+                "Respuesta de seguridad",
+                placeholder="¿Cuál es tu NIF/DNI?",
+                help="Ingresa tu NIF/DNI registrado (sin espacios ni guiones)",
+                max_chars=9
+            )
+            
+            new_password = st.text_input(
+                "Nueva contraseña",
+                type="password",
+                placeholder="Ingresa tu nueva contraseña"
+            )
+            
+            confirm_password = st.text_input(
+                "Confirmar nueva contraseña",
+                type="password",
+                placeholder="Repite la nueva contraseña"
+            )
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            col_btn1, col_btn2 = st.columns(2)
+            
+            with col_btn1:
+                submit_button = st.form_submit_button(
+                    "Restablecer Contraseña",
+                    use_container_width=True,
+                    type="primary"
+                )
+            
+            with col_btn2:
+                cancel_button = st.form_submit_button(
+                    "Cancelar",
+                    use_container_width=True
+                )
+            
+            if cancel_button:
+                st.session_state.show_reset = False
+                st.rerun()
+            
+            if submit_button:
+                if not username or not security_answer or not new_password:
+                    st.error("❌ Por favor completa todos los campos")
+                    return
+                
+                if new_password != confirm_password:
+                    st.error("❌ Las contraseñas no coinciden")
+                    return
+                
+                if len(new_password) < 4:
+                    st.error("❌ La contraseña debe tener al menos 4 caracteres")
+                    return
+                
+                # Cargar usuarios
+                users = load_users()
+                
+                if username not in users:
+                    st.error("❌ Usuario no encontrado")
+                    return
+                
+                # Verificar NIF como respuesta de seguridad
+                if users[username].get('nif', '').upper() != security_answer.upper():
+                    st.error("❌ Respuesta de seguridad incorrecta")
+                    return
+                
+                # Actualizar contraseña
+                users[username]['password'] = hash_password(new_password)
+                
+                if save_users(users):
+                    st.success("✅ Contraseña restablecida correctamente. Ya puedes iniciar sesión.")
+                    time.sleep(2)
+                    st.session_state.show_reset = False
+                    st.rerun()
+                else:
+                    st.error("❌ Error al actualizar la contraseña. Inténtalo de nuevo.")
+
 def save_users(users_dict):
     """Guardar usuarios en GitHub"""
     token = st.secrets["GITHUB_TOKEN"]
@@ -412,9 +514,18 @@ def login_form():
         
         st.markdown("<br>", unsafe_allow_html=True)
         
-        if st.button("📝 Crear nueva cuenta", use_container_width=True):
-            st.session_state.show_register = True
-            st.rerun()
+        # AÑADE ESTOS BOTONES:
+        col_btn1, col_btn2 = st.columns(2)
+        
+        with col_btn1:
+            if st.button("📝 Crear cuenta", use_container_width=True):
+                st.session_state.show_register = True
+                st.rerun()
+        
+        with col_btn2:
+            if st.button("🔑 Recuperar contraseña", use_container_width=True):
+                st.session_state.show_reset = True
+                st.rerun()
 
 def logout():
     """Cerrar sesión"""
@@ -1022,8 +1133,11 @@ def main():
         if not check_session_timeout():
             return
     
+    # Mostrar formulario de recuperación de contraseña
+    if st.session_state.get('show_reset', False):
+        reset_password_form()
     # Mostrar formulario de registro si está activado
-    if st.session_state.get('show_register', False):
+    elif st.session_state.get('show_register', False):
         register_form()
     # Mostrar login si no está autenticado
     elif not check_authentication():
@@ -1032,5 +1146,7 @@ def main():
         # Mostrar la aplicación principal
         main_app()
 
+
 if __name__ == '__main__':
+
     main()
