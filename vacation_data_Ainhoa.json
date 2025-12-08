@@ -16,8 +16,18 @@
         "2025-11-06"
     ],
     "custom_holidays": [
-        "2025-05-15",
-        "2025-09-29"
+        {
+            "date": "2025-05-15",
+            "name": "Festivo personalizado"
+        },
+        {
+            "date": "2025-09-29",
+            "name": "Festivo personalizado"
+        },
+        {
+            "date": "2025-11-10",
+            "name": "Dia Almudena"
+        }
     ],
     "full_name": "AINHOA RUIZ VITTE",
     "nif": "77926862X",
