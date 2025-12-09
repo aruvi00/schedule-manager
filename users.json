@@ -30,5 +30,13 @@
         "workplace": "E.T.S. DE INGENIEROS DE TELECOMUNICACI\u00d3N",
         "company": "UPM",
         "created_at": "2025-10-03T09:45:00.412600"
+    },
+    "sahil": {
+        "password": "c5498d9224533ee6b30f9fcc82824b869a38f9ba42f380363c2b34725d6b5fa7",
+        "full_name": "Sahil Gidwani",
+        "nif": "Z3260715X",
+        "workplace": "E.T.S. DE INGENIEROS DE TELECOMUNICACI\u00d3N",
+        "company": "UPM",
+        "created_at": "2025-12-09T08:58:42.454122"
     }
 }
