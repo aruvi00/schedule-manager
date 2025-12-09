@@ -1,7 +1,12 @@
 {
     "total_days": 22,
     "used_days": [],
-    "custom_holidays": [],
+    "custom_holidays": [
+        {
+            "date": "2025-11-10",
+            "name": "Dia Almudena"
+        }
+    ],
     "full_name": "Sahil Gidwani",
     "nif": "Z3260715X",
     "workplace": "E.T.S. DE INGENIEROS DE TELECOMUNICACI\u00d3N",
