@@ -588,6 +588,7 @@ def main_app():
     
     if not vacation_data:
         st.error("Error al cargar datos de vacaciones")
+        print()
         return
     
     with st.sidebar:
@@ -1034,3 +1035,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
